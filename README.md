@@ -35,17 +35,15 @@ Die Lösung basiert auf einem **WiCAN OBD-Modul** zum Auslesen der Fahrzeugdaten
   
 5. **Hardware:**
 
-   * WiCAN OBD Adapter. Falls Ihr den AMI-Bluetooth-Dongle behalten wollt, dann zusätzlich einen OBD-Doppelstecker, funktioniert prima parallel (sofern man beim Citrone Dongle/App gedöns von prima reden kannn). Ich hab sogar einen Dreifachstecker genommen, da ich mir von der OBD Buchse noch den 12V-Dauerplus für meine Dashcam gezogen habe.
-     
-   * Shelly 1 PM oder ähnlich um den Lader ein- oder auszuschalten.
+   * Shelly 1 PM oder ähnlicher Shelly um den Lader ein- oder auszuschalten.
   
-   * Der FI Schalter am AMI muss durch einen Stecker ersetzt werden, da der FI beim Abschalten der Spannung ausschaltet. Ich habe hier anstelle des FI einen powerCON TRUE1 Stecker angebracht. Dem FI habe ich ein neues Kabel spendiert und an die gegenseite eine powerCON TRUE1 Kupplung angebracht. Dadurch kann man damit weiterhin an einer Schuko Steckdose laden. Zudem habe ich einen Mode2 auf Schuko Adapter besorgt. Auch hier habe ich die True1-Kupplung anstelle der Schuko-Kupplung angebaut - jetzt kann man auch an einer Ladestation laden (Kabel immer schön ins Auto einklammen, es gibt so keinen Diebstahl-Schutz). Die TRUE1-Serie ist Outdoor-geeignet und sie dürfen unter Last gesteckt/getrennt werden. Daher sind sie ideal geeignet. Zudem hab ich mir noch ein PowerCon-Verlängerungskabel aus den beiden Reserve-Steckern und einem Stück Verlängerungskabel gebaut.
-
-   * Die "Wallbox" ist nun eine PowerCon-Einbau-Kupplung mit Klappdeckel in einer Abox Abzweigdose. An den Klappdeckel habe ich zwei kleine Magneten angebracht: Wenn der Klappdeckel offen ist, betätigt er einen 230V-tauglichen Reed-Kontakt (PIC MS-324-5 Reed-Kontakt 1 Schließer), der wiederrum dem Shelly das "gesteckt" Signal schickt. Ich habe drei von diesen Boxen gebaut und in Reihe geschaltet. Der Shelly samt Einspeisung ist ein einer AP-Abzweigdose eingebaut. Von dort geht ein 5x1,5er Kabel zu allen drei Boxen (jeweils durchgeschleift). Neben PE und N liegt dort 1x Phase geschaltet vom Shelly für die Powercon Steckdosen. Dann einmal Phase dauer für die Reed Kontakte und natürlich alle drei Reed Kontakt parallel zurück auf der dritten Ader für den Shelly an dessen Eingang. Die Verknüpfung vom Eingang mit dem Ausgang im Shelly habe ich belassen: Bei einem Ausfall der Logik läd das ganze trotzdem einfach. EVCC erkennt dass der Shelly dadurch eingeschaltet wird und schaltet ihn gleich wieder aus. Das hat auch den Vorteil, dass das WiCAN in Ruhe ein bisschen senden kann und so der aktuelle Ladezustand da ist. 
-
-   * AP-Dose(n), Verschaubung mit Zugentlastung für die Einspeisung, ggfs. Würgenippel für fest installiertes Kabel.
+   * Ein Paar AP-Dosen
   
-   * 10m Gummi-Verlängerungskabel (Den Stecker mit ein bisschen Kabel dran abschneiden un direkt als Einspeisung für das Ganze genommen, den Rest halbiert, einmal als Verlängerung und eimal als Ladekabel).
+   * 10m Gummi-Leitung (Stecker abschneiden als einspeisung für das ganze, den rest halbieren, einmal als Verlängerung und eimal als Ladekabel).
+  
+   * Der FI Schalter am AMI muss durch einen Stecker ersetzt werden, da der FI beim Abschalten der Spannung ausschaltet. Ich habe hier anstelle des FI einen powerCON TRUE1 Stecker angebracht. Dem FI habe ich ein neues Kabel spendiert und an die gegenseite eine powerCON TRUE1 Kupplung angebracht. Dadurch kann man damit weiterhin an einer Schuko Steckdose laden. Zudem habe ich einen Mode2 auf Schuko Adapter besorgt. Auch hier habe ich die True1-Kupplung anstelle der Schuko-Kupplung angebaut - jetzt kann man auch an einer Ladestation laden. Die TRUE1-Serie sind Outdoor-geeignet und dürfen unter Last gesteckt werden. Daher sind sie ideal geeignet. Zudem hab ich mir noch ein PowerCon-Verlängerungskabel aus den beiden Reserve-Steckern gebaut.
+
+   * Die "Wallbox" ist nun eine PowerCon-Einbau-Kupplung mit Klappdeckel in einer Abox Abzweigdose. An den Klappdeckel habe ich zwei kleine Magneten angebracht: Wenn der Klappdeckel offen ist, betätigt er einen 230V-tauglichen Reed-Kontakt (PIC MS-324-5 Reed-Kontakt 1 Schließer), der wiederrum dem Shelly das "gesteckt" Signal schickt. Ich habe drei von diesen Boxen gebaut und in Reihe geschaltet. Der Shelly samt Einspeisung ist ein einer AP-Abzweigdose eingebaut. Von dort geht ein 5x1,5er Kabel zu allen drei Boxen (jeweils durchgeschleift). Neben PE und N liegt dort 1x Phase geschaltet vom Shelly für die Powercon Steckdosen. Dann einmal Phase dauer für die Reed Kontakte und natürlich alle drei Reed Kontakt parallel zurück auf der dritten Ader für den Shelly an dessen Eingang. Die Verknüpfung vom Eingang mit dem Ausgang im Shelly habe ich belassen: Bei einem Ausfall der Logik läd das ganze trotzdem einfach. EVCC erkennt dass der Shelly dadurch eingeschaltet wird und schaltet ihn gleich wieder aus. Das hat auch den Vorteil, dass der Wican in Ruhe ein bisschen senden kann und so der aktuelle Ladezustand da ist.
 
 Fotos von dem ganzen findet ihr im Ordner images hier im Repository: [Ladestecker-Bilder](images/)
 
@@ -54,27 +52,24 @@ Bitte beachtet, dass ich Fachkraft bin und sowas bauen darf. Ihr müsst Euch bit
 
 **Material-Liste:**
 
-Für alles, was ich oben beschrieben habe, also drei Wand-Dosen, ein Verlängerungskabel und eine Kupplung für ein Mode2-Kabel
-
 |Anzahl|Bestellnummern-Beispiel|Bezeichnung|
 |:---|:---|:---|
-|3 Stück|Conrad 1970190|Neutrik powerCON TRUE1 NAC3FX-W-TOP|
 |1 Stück|Conrad 1384363|VERLÄNGERUNGSKABEL 10 M IP44|
 |4 Stück|Conrad 3062232|Abzweigkasten Abox 025-L/sw|
 |3 Stück|Conrad 503530|FLACHGEH. REEDSENSOR PIC MS-324-5|
-|3 Stück|Thomann 453305|Neutrik NAC3MX-W-TOP|Neutrik NAC3MX-W-TOP, verriegelbare 16A (lt VDE) / 20A (lt. UL) Steckverbindung, geschlossenes System|
-|3 Stück|Thomann 453314|Neutrik NAC3FPX-ST-TOP, Geräte Ausgangsbuchse, verriegelbare 16A (lt VDE) / 20A (lt. UL) Steckverbindung|
-|3 Stück|Thomann 560874|Neutrik NSSC-2; gefederte Dichtklappe zum Schutz aller powerCON TRUE1 TOP female Einbaustecker; Schutzklasse IP65|
-|6 Stück|Amazon B0CN1227BJ|Neodym Magnete mit Loch, Extra Stark 10mmx3mm|
-|1 Stück|Amazon B0CYZ4QJG8|Mode2 Stecker an Schuko Kupplung|
+|3 Stück|Conrad 1970190|Neutrik powerCON TRUE1 NAC3FX-W-TOP, verriegelbare 16A (lt VDE) / 20A (lt. UL) Steckverbindung, geschlossenes System|
+|3 Stück|Thomann 453305|Neutrik powerCON TRUE1 NAC3MX-W-TOP, verriegelbare 16A (lt VDE) / 20A (lt. UL) Steckverbindung, geschlossenes System|
+|3 Stück|Thomann 453314|Neutrik powerCON TRUE1 NAC3FPX-ST-TOP, Geräte Ausgangsbuchse, verriegelbare 16A (lt VDE) / 20A (lt. UL) Steckverbindung|
+|3 Stück|Thomann 560874|Neutrik powerCON TRUE1 NSSC-2; gefederte Dichtklappe zum Schutz aller powerCON TRUE1 TOP female Einbaustecker; Schutzklasse IP65|
+|40 Stück|Amazon B0CN1227BJ|Neodym Magnete mit Loch, Extra Stark 10mmx3mm|
 
 ## 1. Konfiguration des WiCAN-Moduls
 
-Die folgende Konfiguration wird in der Weboberfläche des WiCAN-Moduls unter "CAN to JSON interpreter" eingetragen. Sie sorgt dafür, dass die CAN-Daten bereits auf dem Modul geparst und nur die relevanten Werte per MQTT gesendet werden. Ihr müsst das WiCAN Modul natürlich auch ins WLAN einbinden oder ihm anderweitig ermöglichen Online zu kommen und Daten an Euren Broker zu senden.
+Die folgende Konfiguration wird in der Weboberfläche des WiCAN-Moduls unter "CAN to JSON interpreter" eingetragen. Sie sorgt dafür, dass die CAN-Daten bereits auf dem Modul geparst und nur die relevanten Werte per MQTT gesendet werden. Ihr müsst das WICAN Modul natürlich auch ins WLAN einbinden oder ihm anderweitig ermöglichen Online zu kommen und Daten an Euren Broker zu senden.
 
 **Wichtiger Hinweis:** Der Kilometerstand (`odometer_raw`) wird als Rohwert gesendet, da die Firmware des WiCAN-Moduls die nötige Byte-Swap-Berechnung nicht korrekt verarbeiten kann. Die Umrechnung erfolgt später in Node-RED.
 
-![WiCAN Config](images/WiCAN-Config.png)
+![WICAN Config](images/WiCAN-Config.png)
 
 **MQTT CAN Filter**
 
@@ -190,5 +185,5 @@ loadpoints:
   mode: pv           # Standard-Lademodus (pv, minpv, now)
 ```
 
-## Danksagung
+##Danksagung
 Diese Integration wäre ohne die Vorarbeit aus dem [AMI-Display GitHub-Projekt](https://github.com/flrahe/AMI-Display) nicht möglich gewesen, das als Referenz für die CAN-IDs diente. Danke Euch!

@@ -1,0 +1,627 @@
+[
+    {
+        "id": "3ee8b74ef468e5c7",
+        "type": "tab",
+        "label": "Citroen Ami MQTT Status",
+        "disabled": false,
+        "info": "Dieser Flow empfängt die bereits vom WiCAN-Modul aufbereiteten Daten, kombiniert sie mit dem Shelly-Status und gibt sie an das Dashboard und EVCC weiter."
+    },
+    {
+        "id": "2e244bd7363b562a",
+        "type": "junction",
+        "z": "3ee8b74ef468e5c7",
+        "x": 140,
+        "y": 440,
+        "wires": [
+            [
+                "d03babd2859b7769",
+                "612b0520a7a09e39",
+                "ef63eb6ce937a5a5",
+                "8722375e8466240e",
+                "53cb8026d2bc468d",
+                "06ed50c55fcdd545",
+                "5587aed9afe74023"
+            ]
+        ]
+    },
+    {
+        "id": "4bc03d0ead68d2cf",
+        "type": "inject",
+        "z": "3ee8b74ef468e5c7",
+        "name": "Assemble Data (every 5s)",
+        "props": [
+            {
+                "p": "payload"
+            }
+        ],
+        "repeat": "5",
+        "crontab": "",
+        "once": true,
+        "onceDelay": 0.1,
+        "topic": "",
+        "payload": "",
+        "payloadType": "date",
+        "x": 170,
+        "y": 320,
+        "wires": [
+            [
+                "d194e3dba1d68471"
+            ]
+        ]
+    },
+    {
+        "id": "d194e3dba1d68471",
+        "type": "function",
+        "z": "3ee8b74ef468e5c7",
+        "name": "Create Final JSON Object",
+        "func": "const now = Date.now();\nconst TIMEOUT = 60 * 1000; // 1 Minute in Millisekunden\n\n// Helper-Funktion, die einen Wert nur zurückgibt, wenn er nicht veraltet ist\nfunction getValidData(key, defaultValue) {\n    const data = flow.get(`ami_${key}`);\n    // Prüfen, ob Daten UND ein Zeitstempel existieren und ob dieser innerhalb des Timeouts liegt\n    if (data && data.timestamp && (now - data.timestamp < TIMEOUT)) {\n        return data.value;\n    }\n    // Andernfalls den sicheren Standardwert zurückgeben\n    return defaultValue;\n}\n\n// Helper für Werte, die keinen Timeout benötigen\nfunction getData(key, defaultValue) {\n    const data = flow.get(`ami_${key}`);\n    return data ? data.value : defaultValue;\n}\n\n\n// --- Werte mit und ohne Timeout aus dem Kontext holen ---\nconst odometerRaw = getData(\"odometer_raw\", 0);\nconst rangeKm = getData(\"range_km\", 0);\nconst socPercent = getData(\"soc_percent\", 0);\nconst shellyPlugConnected = flow.get(\"shelly_plug_connected\") ?? false;\n\n// Diese Werte werden nach 1 Minute Inaktivität auf ihre Standardwerte zurückgesetzt\nconst vehicleStatusRaw = getValidData(\"vehicle_on\", 0); // 0 = OFF\nconst chargeTimeRaw = getValidData(\"charge_time_sec\", 65535); // 65535 = Not Charging\n\n\n// --- Kilometerstand umrechnen ---\nlet final_odometer_km = 0;\nif (odometerRaw > 0) {\n    const swapped_V = (((odometerRaw & 16711680) / 65536) | (odometerRaw & 65280)) | ((odometerRaw & 255) * 65536);\n    final_odometer_km = swapped_V / 10.0;\n}\n\n// --- Ladestatus bestimmen ---\nconst isAmiCharging = chargeTimeRaw < 65535;\n\n// --- Finales Objekt bauen ---\nconst status = {\n    odometer_km: final_odometer_km,\n    range_km: rangeKm,\n    soc_percent: socPercent,\n    vehicle_status: (vehicleStatusRaw === 1) ? \"ON\" : \"OFF\",\n    charger_connected: shellyPlugConnected,\n    is_charging: isAmiCharging,\n    remaining_charge_time_sec: isAmiCharging ? chargeTimeRaw : 0\n};\n\nmsg.payload = status;\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 430,
+        "y": 320,
+        "wires": [
+            [
+                "2e244bd7363b562a",
+                "82c7fea196c4490f"
+            ]
+        ]
+    },
+    {
+        "id": "1fa1868a43d139e9",
+        "type": "debug",
+        "z": "3ee8b74ef468e5c7",
+        "name": "Final Ami Status",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": true,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "payload.soc_percent",
+        "statusType": "msg",
+        "x": 920,
+        "y": 260,
+        "wires": []
+    },
+    {
+        "id": "a0063ca915bf9596",
+        "type": "mqtt out",
+        "z": "3ee8b74ef468e5c7",
+        "name": "Publish to smarthome/citroen_ami/status",
+        "topic": "smarthome/citroen_ami/status",
+        "qos": "",
+        "retain": "true",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "59ec4f6debcd1b1e",
+        "x": 900,
+        "y": 420,
+        "wires": []
+    },
+    {
+        "id": "96b28b2f42c14940",
+        "type": "comment",
+        "z": "3ee8b74ef468e5c7",
+        "name": "1. Aufbereitete MQTT-Daten empfangen",
+        "info": "Dieser Abschnitt abonniert das MQTT-Topic deines wican-Moduls und speichert die bereits aufbereiteten Werte in Flow-Variablen.",
+        "x": 170,
+        "y": 40,
+        "wires": []
+    },
+    {
+        "id": "c3901581bdf3af9e",
+        "type": "comment",
+        "z": "3ee8b74ef468e5c7",
+        "name": "2. Status zusammenfassen und ausgeben",
+        "info": "Ein Inject-Node löst alle 5 Sekunden eine Function aus.\nDiese Function liest alle gespeicherten Flow-Variablen aus, fasst sie zu einem einzigen, sauberen JSON-Objekt zusammen und sendet es an den Ausgang.\n\nVon hier aus kannst du die Daten:\n- Im Debug-Fenster anzeigen.\n- An ein anderes MQTT-Topic senden (für EVCC).\n- Im Dashboard anzeigen.",
+        "x": 180,
+        "y": 280,
+        "wires": []
+    },
+    {
+        "id": "1390b39aeb098c19",
+        "type": "comment",
+        "z": "3ee8b74ef468e5c7",
+        "name": "3. Daten im Dashboard visualisieren",
+        "info": "Die UI-Nodes nehmen das finale Status-Objekt entgegen und stellen die einzelnen Werte im Node-RED Dashboard dar.\n\nDas Dashboard ist erreichbar unter: http://<deine-ip>:1880/ui",
+        "x": 410,
+        "y": 460,
+        "wires": []
+    },
+    {
+        "id": "ef63eb6ce937a5a5",
+        "type": "ui_gauge",
+        "z": "3ee8b74ef468e5c7",
+        "name": "",
+        "group": "69e447bafbd52d85",
+        "order": 1,
+        "width": 0,
+        "height": 0,
+        "gtype": "gage",
+        "title": "Ladezustand",
+        "label": "%",
+        "format": "{{payload.soc_percent}}",
+        "min": 0,
+        "max": "100",
+        "colors": [
+            "#ff0000",
+            "#e6e600",
+            "#008000"
+        ],
+        "seg1": "20",
+        "seg2": "80",
+        "diff": false,
+        "className": "",
+        "x": 370,
+        "y": 520,
+        "wires": []
+    },
+    {
+        "id": "612b0520a7a09e39",
+        "type": "ui_gauge",
+        "z": "3ee8b74ef468e5c7",
+        "name": "",
+        "group": "69e447bafbd52d85",
+        "order": 2,
+        "width": 0,
+        "height": 0,
+        "gtype": "gage",
+        "title": "Reichweite",
+        "label": "km",
+        "format": "{{payload.range_km}}",
+        "min": 0,
+        "max": "80",
+        "colors": [
+            "#ff0000",
+            "#e6e600",
+            "#008000"
+        ],
+        "seg1": "15",
+        "seg2": "50",
+        "x": 550,
+        "y": 520,
+        "wires": []
+    },
+    {
+        "id": "d03babd2859b7769",
+        "type": "ui_text",
+        "z": "3ee8b74ef468e5c7",
+        "group": "69e447bafbd52d85",
+        "order": 3,
+        "width": 0,
+        "height": 0,
+        "name": "",
+        "label": "Kilometerstand",
+        "format": "{{payload.odometer_km}} km",
+        "layout": "row-spread",
+        "x": 750,
+        "y": 520,
+        "wires": []
+    },
+    {
+        "id": "8722375e8466240e",
+        "type": "ui_text",
+        "z": "3ee8b74ef468e5c7",
+        "group": "69e447bafbd52d85",
+        "order": 4,
+        "width": 0,
+        "height": 0,
+        "name": "",
+        "label": "Fahrzeugstatus",
+        "format": "{{payload.vehicle_status}}",
+        "layout": "row-spread",
+        "x": 370,
+        "y": 580,
+        "wires": []
+    },
+    {
+        "id": "53cb8026d2bc468d",
+        "type": "function",
+        "z": "3ee8b74ef468e5c7",
+        "name": "Format Charge Time",
+        "func": "function formatSecondsToHHMMSS(totalSeconds) {\n    // Stellt sicher, dass wir eine ganze Zahl haben\n    const seconds = parseInt(totalSeconds, 10);\n\n    // Stunden berechnen\n    const hours = Math.floor(seconds / 3600);\n\n    // Minuten berechnen\n    const minutes = Math.floor((seconds % 3600) / 60);\n\n    // Übrige Sekunden berechnen\n    const secs = seconds % 60;\n\n    // Jede Komponente auf zwei Ziffern formatieren (z.B. 7 -> \"07\")\n    const paddedHours = String(hours).padStart(2, '0');\n    const paddedMinutes = String(minutes).padStart(2, '0');\n    const paddedSeconds = String(secs).padStart(2, '0');\n\n    // Den formatierten String zurückgeben\n    return `${paddedHours}:${paddedMinutes}:${paddedSeconds}`;\n}\n\n\nif (msg.payload.charger_connected && msg.payload.is_charging) {\n    const time = msg.payload.remaining_charge_time_sec;\n    msg.payload = `${formatSecondsToHHMMSS(time)}`;\n} else {\n    msg.payload = \"-\";\n}\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 400,
+        "y": 760,
+        "wires": [
+            [
+                "6ba0070cfcdfd39a"
+            ]
+        ]
+    },
+    {
+        "id": "6ba0070cfcdfd39a",
+        "type": "ui_text",
+        "z": "3ee8b74ef468e5c7",
+        "group": "69e447bafbd52d85",
+        "order": 6,
+        "width": 0,
+        "height": 0,
+        "name": "",
+        "label": "Restliche Ladezeit",
+        "format": "{{payload}}",
+        "layout": "row-spread",
+        "x": 630,
+        "y": 760,
+        "wires": []
+    },
+    {
+        "id": "06ed50c55fcdd545",
+        "type": "ui_text",
+        "z": "3ee8b74ef468e5c7",
+        "group": "69e447bafbd52d85",
+        "order": 5,
+        "width": 0,
+        "height": 0,
+        "name": "",
+        "label": "Ladegerät verbunden",
+        "format": "{{payload.charger_connected}}",
+        "layout": "row-spread",
+        "className": "",
+        "style": false,
+        "font": "",
+        "fontSize": "",
+        "color": "#000000",
+        "x": 420,
+        "y": 640,
+        "wires": []
+    },
+    {
+        "id": "bf3cf3715dbcac6b",
+        "type": "mqtt in",
+        "z": "3ee8b74ef468e5c7",
+        "name": "Shelly Charger Input",
+        "topic": "shellies/amicharger/status/input:0",
+        "qos": "2",
+        "datatype": "json",
+        "broker": "59ec4f6debcd1b1e",
+        "nl": false,
+        "rap": false,
+        "inputs": 0,
+        "x": 170,
+        "y": 180,
+        "wires": [
+            [
+                "e6f9b522a5f03c0d"
+            ]
+        ]
+    },
+    {
+        "id": "e6f9b522a5f03c0d",
+        "type": "function",
+        "z": "3ee8b74ef468e5c7",
+        "name": "Store Shelly Plug Status",
+        "func": "if (msg.payload && typeof msg.payload.state !== 'undefined') {\n    // Speichert den Zustand des Shelly (true/false) in einer Flow-Variable\n    flow.set(\"shelly_plug_connected\", msg.payload.state);\n}\nreturn null;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "x": 400,
+        "y": 180,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "82c7fea196c4490f",
+        "type": "function",
+        "z": "3ee8b74ef468e5c7",
+        "name": "Format for EVCC",
+        "func": "// Kombiniert die Info vom Shelly (Stecker drin?) und vom CAN-Bus (lädt er?)\n\nconst isPlugged = msg.payload.charger_connected; // vom Shelly\nconst isCharging = msg.payload.is_charging; // vom CAN-Bus\n\nif (isPlugged && isCharging) {\n    msg.payload.charge_status = 'C'; // Verbunden und lädt\n} else if (isPlugged && !isCharging) {\n    msg.payload.charge_status = 'B'; // Verbunden, aber lädt nicht\n} else {\n    msg.payload.charge_status = 'A'; // Nicht verbunden\n}\n\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "x": 730,
+        "y": 340,
+        "wires": [
+            [
+                "a0063ca915bf9596",
+                "1fa1868a43d139e9"
+            ]
+        ]
+    },
+    {
+        "id": "5587aed9afe74023",
+        "type": "ui_text",
+        "z": "3ee8b74ef468e5c7",
+        "group": "69e447bafbd52d85",
+        "order": 5,
+        "width": 0,
+        "height": 0,
+        "name": "",
+        "label": "AMI lädt",
+        "format": "{{payload.is_charging}}",
+        "layout": "row-spread",
+        "className": "",
+        "style": false,
+        "font": "",
+        "fontSize": "",
+        "color": "#000000",
+        "x": 400,
+        "y": 700,
+        "wires": []
+    },
+    {
+        "id": "a112590c4d9f99dd",
+        "type": "mqtt in",
+        "z": "3ee8b74ef468e5c7",
+        "name": "wican Parsed JSON",
+        "topic": "wican/ccba974ecd39/can/rx",
+        "qos": "2",
+        "datatype": "json",
+        "broker": "59ec4f6debcd1b1e",
+        "nl": false,
+        "rap": false,
+        "inputs": 0,
+        "x": 140,
+        "y": 100,
+        "wires": [
+            [
+                "c75c0e0b1904af2f"
+            ]
+        ]
+    },
+    {
+        "id": "c75c0e0b1904af2f",
+        "type": "function",
+        "z": "3ee8b74ef468e5c7",
+        "name": "Store Parsed Value",
+        "func": "// Der Payload ist bereits ein JSON-Objekt, z.B. {\"soc_percent\": 95}\n\n// Den Schlüssel (z.B. \"soc_percent\") und den Wert (z.B. 95) extrahieren\nconst key = Object.keys(msg.payload)[0];\nconst value = msg.payload[key];\n\nif (key && value !== undefined) {\n    // Ein Objekt mit dem Wert und dem aktuellen Zeitstempel speichern\n    const data = {\n        value: value,\n        timestamp: Date.now()\n    };\n    \n    // Eine Flow-Variable mit dem Präfix 'ami_' und dem Schlüsselnamen setzen\n    // z.B. flow.set(\"ami_soc_percent\", {value: 95, timestamp: 167...});\n    flow.set(`ami_${key}`, data);\n}\n\nreturn null; // Diese Nachricht muss nicht weitergeleitet werden",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 370,
+        "y": 100,
+        "wires": [
+            []
+        ]
+    },
+    {
+        "id": "bf91cf5aea70e67f",
+        "type": "mqtt out",
+        "z": "3ee8b74ef468e5c7",
+        "name": "MQTT Shelly Ami Charger ",
+        "topic": "shellies/amicharger/command/switch:0",
+        "qos": "1",
+        "retain": "false",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "59ec4f6debcd1b1e",
+        "x": 870,
+        "y": 880,
+        "wires": []
+    },
+    {
+        "id": "876a757b015c6b59",
+        "type": "mqtt in",
+        "z": "3ee8b74ef468e5c7",
+        "name": "evcc for Ami Charger command",
+        "topic": "smarthome/amicharger/command",
+        "qos": "2",
+        "datatype": "utf8",
+        "broker": "59ec4f6debcd1b1e",
+        "nl": false,
+        "rap": false,
+        "inputs": 0,
+        "x": 190,
+        "y": 880,
+        "wires": [
+            [
+                "0437e8c034ea4edb"
+            ]
+        ]
+    },
+    {
+        "id": "718d6acbd1777d70",
+        "type": "change",
+        "z": "3ee8b74ef468e5c7",
+        "name": "on",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "on",
+                "tot": "str"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 590,
+        "y": 860,
+        "wires": [
+            [
+                "bf91cf5aea70e67f"
+            ]
+        ]
+    },
+    {
+        "id": "846586cc6fc5429c",
+        "type": "change",
+        "z": "3ee8b74ef468e5c7",
+        "name": "off",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "off",
+                "tot": "str"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 590,
+        "y": 900,
+        "wires": [
+            [
+                "bf91cf5aea70e67f"
+            ]
+        ]
+    },
+    {
+        "id": "0437e8c034ea4edb",
+        "type": "switch",
+        "z": "3ee8b74ef468e5c7",
+        "name": "",
+        "property": "payload",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "eq",
+                "v": "true",
+                "vt": "str"
+            },
+            {
+                "t": "eq",
+                "v": "false",
+                "vt": "str"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 2,
+        "x": 430,
+        "y": 880,
+        "wires": [
+            [
+                "718d6acbd1777d70"
+            ],
+            [
+                "846586cc6fc5429c"
+            ]
+        ]
+    },
+    {
+        "id": "1048c2198bcba762",
+        "type": "inject",
+        "z": "3ee8b74ef468e5c7",
+        "name": "",
+        "props": [
+            {
+                "p": "payload"
+            },
+            {
+                "p": "topic",
+                "vt": "str"
+            }
+        ],
+        "repeat": "30",
+        "crontab": "",
+        "once": true,
+        "onceDelay": 0.1,
+        "topic": "shellies/amicharger/command/switch:0",
+        "payload": "status_update",
+        "payloadType": "str",
+        "x": 680,
+        "y": 100,
+        "wires": [
+            [
+                "83bd45f6e87005de"
+            ]
+        ]
+    },
+    {
+        "id": "83bd45f6e87005de",
+        "type": "mqtt out",
+        "z": "3ee8b74ef468e5c7",
+        "name": "MQTT Shelly Ami Charger ",
+        "topic": "",
+        "qos": "1",
+        "retain": "false",
+        "respTopic": "",
+        "contentType": "",
+        "userProps": "",
+        "correl": "",
+        "expiry": "",
+        "broker": "59ec4f6debcd1b1e",
+        "x": 970,
+        "y": 100,
+        "wires": []
+    },
+    {
+        "id": "a4e11007c2f3866b",
+        "type": "comment",
+        "z": "3ee8b74ef468e5c7",
+        "name": "3. Shelly ansteuern",
+        "info": "Ein Inject-Node löst alle 5 Sekunden eine Function aus.\nDiese Function liest alle gespeicherten Flow-Variablen aus, fasst sie zu einem einzigen, sauberen JSON-Objekt zusammen und sendet es an den Ausgang.\n\nVon hier aus kannst du die Daten:\n- Im Debug-Fenster anzeigen.\n- An ein anderes MQTT-Topic senden (für EVCC).\n- Im Dashboard anzeigen.",
+        "x": 110,
+        "y": 840,
+        "wires": []
+    },
+    {
+        "id": "59ec4f6debcd1b1e",
+        "type": "mqtt-broker",
+        "name": "hora2",
+        "broker": "hora2",
+        "port": "1883",
+        "clientid": "nodered",
+        "autoConnect": true,
+        "usetls": false,
+        "protocolVersion": "4",
+        "keepalive": "60",
+        "cleansession": true,
+        "autoUnsubscribe": true,
+        "birthTopic": "",
+        "birthQos": "0",
+        "birthRetain": "false",
+        "birthPayload": "",
+        "birthMsg": {},
+        "closeTopic": "",
+        "closeQos": "0",
+        "closeRetain": "false",
+        "closePayload": "",
+        "closeMsg": {},
+        "willTopic": "",
+        "willQos": "0",
+        "willRetain": "false",
+        "willPayload": "",
+        "willMsg": {},
+        "userProps": "",
+        "sessionExpiry": ""
+    },
+    {
+        "id": "69e447bafbd52d85",
+        "type": "ui_group",
+        "name": "Citroën Ami Status",
+        "tab": "8cf43a428a544102",
+        "order": 1,
+        "disp": true,
+        "width": "6",
+        "collapse": false
+    },
+    {
+        "id": "8cf43a428a544102",
+        "type": "ui_tab",
+        "name": "Ami",
+        "icon": "directions_car",
+        "order": 1,
+        "disabled": false,
+        "hidden": false
+    }
+]

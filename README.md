@@ -78,7 +78,7 @@ CAN ID (dec)|Name|PID|Index|Start Bit|Bit Length|Expression|Cycle MS
 1811|range_km|-1|0|1|7|V|5000
 1811|vehicle_on|-1|0|21|1|V|5000
 1408|soc_percent|-1|0|40|8|V|5000
-1410|charge_time_sec|-1|0|0|16|(((V&255)*256)|((V&65280)/256))|5000
+1410|charge_time_sec|-1|0|0|16|(((V&255)*256)\|((V&65280)/256))|5000
 1409|odometer_raw|-1|0|32|24|V|5000
 
 ## 2. Konfiguration Node-RED

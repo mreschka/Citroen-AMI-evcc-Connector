@@ -35,15 +35,18 @@ Die Lösung basiert auf einem **WiCAN OBD-Modul** zum Auslesen der Fahrzeugdaten
   
 5. **Hardware:**
 
-   * Shelly 1 PM oder ähnlicher Shelly um den Lader ein- oder auszuschalten.
-  
-   * Der FI Schalter am AMI muss durch einen Stecker ersetzt werden, da der FI beim Abschalten der Spannung ausschaltet. Ich habe hier anstelle des FI einen powerCON TRUE1 Stecker angebracht. Dem FI habe ich ein neues Kabel spendiert und an die gegenseite eine powerCON TRUE1 Kupplung angebracht. Dadurch kann man damit weiterhin an einer Schuko Steckdose laden. Zudem habe ich einen Mode2 auf Schuko Adapter besorgt. Auch hier habe ich die True1-Kupplung anstelle der Schuko-Kupplung angebaut - jetzt kann man auch an einer Ladestation laden. Die TRUE1-Serie sind Outdoor-geeignet und dürfen unter Last gesteckt werden. Daher sind sie ideal geeignet. Zudem hab ich mir noch ein PowerCon-Verlängerungskabel aus den beiden Reserve-Steckern gebaut.
+* WiCAN OBD Adapter. Falls Ihr den AMI-Bluetooth-Dongle behalten wollt, dann zusätzlich einen OBD-Doppelstecker, funktioniert prima parallel (sofern man beim Citrone Dongle/App gedöns von prima reden kannn). Ich hab sogar einen Dreifachstecker genommen, da ich mir von der OBD Buchse noch den 12V-Dauerplus für meine Dashcam gezogen habe.
 
-   * Die "Wallbox" ist nun eine PowerCon-Einbau-Kupplung mit Klappdeckel in einer Abox Abzweigdose. An den Klappdeckel habe ich zwei kleine Magneten angebracht: Wenn der Klappdeckel offen ist, betätigt er einen 230V-tauglichen Reed-Kontakt (PIC MS-324-5 Reed-Kontakt 1 Schließer), der wiederrum dem Shelly das "gesteckt" Signal schickt. Ich habe drei von diesen Boxen gebaut und in Reihe geschaltet. Der Shelly samt Einspeisung ist ein einer AP-Abzweigdose eingebaut. Von dort geht ein 5x1,5er Kabel zu allen drei Boxen (jeweils durchgeschleift). Neben PE und N liegt dort 1x Phase geschaltet vom Shelly für die Powercon Steckdosen. Dann einmal Phase dauer für die Reed Kontakte und natürlich alle drei Reed Kontakt parallel zurück auf der dritten Ader für den Shelly an dessen Eingang. Die Verknüpfung vom Eingang mit dem Ausgang im Shelly habe ich belassen: Bei einem Ausfall der Logik läd das ganze trotzdem einfach. EVCC erkennt dass der Shelly dadurch eingeschaltet wird und schaltet ihn gleich wieder aus. Das hat auch den Vorteil, dass der WiCAN in Ruhe ein bisschen senden kann und so der aktuelle Ladezustand da ist.
-  
-   * Eine oder mehrere ordentliche, wetterfeste AP-Dose
-  
-   * 10m Gummi-Leitung (Stecker abschneiden als einspeisung für das ganze, den rest halbieren, einmal als Verlängerung und eimal als Ladekabel).
+* Shelly 1 PM oder ähnlich um den Lader ein- oder auszuschalten.
+
+* Der FI Schalter am AMI muss durch einen Stecker ersetzt werden, da der FI beim Abschalten der Spannung ausschaltet. Ich habe hier anstelle des FI einen powerCON TRUE1 Stecker angebracht. Dem FI habe ich ein neues Kabel spendiert und an die gegenseite eine powerCON TRUE1 Kupplung angebracht. Dadurch kann man damit weiterhin an einer Schuko Steckdose laden. Zudem habe ich einen Mode2 auf Schuko Adapter besorgt. Auch hier habe ich die True1-Kupplung anstelle der Schuko-Kupplung angebaut - jetzt kann man auch an einer Ladestation laden (Kabel immer schön ins Auto einklammen, es gibt so keinen Diebstahl-Schutz). Die TRUE1-Serie ist Outdoor-geeignet und sie dürfen unter Last gesteckt/getrennt werden. Daher sind sie ideal geeignet. Zudem hab ich mir noch ein PowerCon-Verlängerungskabel aus den beiden Reserve-Steckern und einem Stück Verlängerungskabel gebaut.
+
+* Die "Wallbox" ist nun eine PowerCon-Einbau-Kupplung mit Klappdeckel in einer Abox Abzweigdose. An den Klappdeckel habe ich zwei kleine Magneten angebracht: Wenn der Klappdeckel offen ist, betätigt er einen 230V-tauglichen Reed-Kontakt (PIC MS-324-5 Reed-Kontakt 1 Schließer), der wiederrum dem Shelly das "gesteckt" Signal schickt. Ich habe drei von diesen Boxen gebaut und in Reihe geschaltet. Der Shelly samt Einspeisung ist ein einer AP-Abzweigdose eingebaut. Von dort geht ein 5x1,5er Kabel zu allen drei Boxen (jeweils durchgeschleift). Neben PE und N liegt dort 1x Phase geschaltet vom Shelly für die Powercon Steckdosen. Dann einmal Phase dauer für die Reed Kontakte und natürlich alle drei Reed Kontakt parallel zurück auf der dritten Ader für den Shelly an dessen Eingang. Die Verknüpfung vom Eingang mit dem Ausgang im Shelly habe ich belassen: Bei einem Ausfall der Logik läd das ganze trotzdem einfach. EVCC erkennt dass der Shelly dadurch eingeschaltet wird und schaltet ihn gleich wieder aus. Das hat auch den Vorteil, dass das WiCAN in Ruhe ein bisschen senden kann und so der aktuelle Ladezustand da ist.
+
+* AP-Dose(n), Verschaubung mit Zugentlastung für die Einspeisung, ggfs. Würgenippel für fest installiertes Kabel.
+
+* 10m Gummi-Verlängerungskabel (Den Stecker mit ein bisschen Kabel dran abschneiden un direkt als Einspeisung für das Ganze genommen, den Rest halbiert, einmal als Verlängerung und eimal als Ladekabel).
+
 
 Fotos von dem ganzen findet ihr im Ordner images hier im Repository: [Ladestecker-Bilder](images/)
 

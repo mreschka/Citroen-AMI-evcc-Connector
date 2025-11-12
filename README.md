@@ -111,7 +111,15 @@ Der Node-RED-Flow ist das Herzstück der Logik. Er abonniert die WiCAN- und Shel
 
 * Konvertiert das ON-OFF Kommando von EVCC and den Shelly 
 
-**Import:** Kopiere den Inhalt der Datei `citroen-ami-flow.json` und importiere ihn in Node-RED. Passe die MQTT-Broker-Einstellungen an.
+**Import:** Kopiere den Inhalt der Datei [citroen-ami-flow.json](citroen-ami-flow.json) und importiere ihn in Node-RED. Passe die MQTT-Broker-Einstellungen an.
+
+**Flow:**
+
+![WICAN Config](images/citroen-ami-flow.png)
+
+**Dashboard**
+
+![WICAN Config](images/citroen-ami-ui.png)
 
 ## 3. Konfiguration EVCC (`evcc.yaml`)
 

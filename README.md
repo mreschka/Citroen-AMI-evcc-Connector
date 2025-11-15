@@ -48,7 +48,7 @@ Die Lösung basiert auf einem **WiCAN OBD-Modul** zum Auslesen der Fahrzeugdaten
 * 10m Gummi-Verlängerungskabel (Den Stecker mit ein bisschen Kabel dran abschneiden un direkt als Einspeisung für das Ganze genommen, den Rest halbiert, einmal als Verlängerung und eimal als Ladekabel).
 
 
-Fotos von dem ganzen findet ihr [hier](Images.de) mit Beschreibung oder im direkt Ordner images im Repository: [Ladestecker-Bilder](images/)
+Fotos von dem ganzen findet ihr [hier](Images.md) mit Beschreibung oder im direkt Ordner images im Repository: [Ladestecker-Bilder](images/)
 
 **DISCLAIMER:**
 Bitte beachtet, dass ich Fachkraft bin und sowas bauen darf. Ihr müsst Euch bitte unbedingt an die gültigen Vorschriften halten. Nutzt Adern-Endhülsen wo nötig. Nutzt transparente WAGOS und nutzt deren transparentes Gehäuse um die ordentliche Montage zu kontrollieren. Messt am Ende alles sauber durch und macht eine Isolationmessung. Die ganze Installation muss unbedingt an einem FI angeschlossen sein, wenn ihr nicht wieder den FI vom AMI zur Einspeisung nutzt (oder einen gelichwertigen). Zudem nutzt bitte keinesfalls einen normalen Schuko Stecker anstelle der PowerCon-Stecker am AMI. So vermeidet ihr, dass jemand das Auto mal an einer Steckdose ohne FI lädt. Daher habe ich ja auch das Ladekabel aus dem alten FI gefertigt, damit man es damit wieder bedenkenlos an jeder Steckdose laden kann. **Ich übernehme keinerlei Haftung für das ganze und garantiere auch nicht das Prinzip des ganzen. Bitte sucht Euch einen Elektriker, wenn ihr nicht selbst dafür qualifiziert seid.**

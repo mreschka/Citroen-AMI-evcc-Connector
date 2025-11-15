@@ -140,7 +140,7 @@ chargers:
   status:
     source: mqtt
     topic: smarthome/citroen_ami/status
-    jq: .charge_status # Dieses Feld wird jetzt in Node-RED intelligent kombiniert
+    jq: .charge_status
   enable:
     source: mqtt
     topic: smarthome/amicharger/command
@@ -180,7 +180,7 @@ vehicles:
    status:
      source: mqtt
      topic: smarthome/citroen_ami/status
-     jq: .charge_status # Dieses Feld wird jetzt in Node-RED intelligent kombiniert
+     jq: .charge_status
    range:
      source: mqtt
      topic: smarthome/citroen_ami/status

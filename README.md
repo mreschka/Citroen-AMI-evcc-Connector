@@ -198,4 +198,4 @@ loadpoints:
 ```
 
 ## Danksagung
-Diese Integration wäre ohne die Vorarbeit aus dem [AMI-Display GitHub-Projekt](https://github.com/flrahe/AMI-Display) nicht möglich gewesen, das als Referenz für die CAN-IDs diente. Danke Euch!
+Diese Integration wäre ohne die Vorarbeit aus dem [AMI-Display GitHub-Projekt](https://github.com/flrahe/AMI-Display) nicht möglich gewesen, das als Referenz für die CAN-IDs diente. Danke Euch vielmals!

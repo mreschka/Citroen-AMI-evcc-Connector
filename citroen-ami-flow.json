@@ -7,6 +7,29 @@
         "info": "Dieser Flow empfängt die bereits vom WiCAN-Modul aufbereiteten Daten, kombiniert sie mit dem Shelly-Status und gibt sie an das Dashboard und EVCC weiter."
     },
     {
+        "id": "32c9c8bd14ae1369",
+        "type": "group",
+        "z": "3ee8b74ef468e5c7",
+        "name": "SAFETY: Wegfahrsperre bei gestecktem Kabel",
+        "style": {
+            "stroke": "#ff0000",
+            "fill": "#ffcccc",
+            "label": true
+        },
+        "nodes": [
+            "8c3f2288b4843fbe",
+            "2c60e946733b7e76",
+            "6ac61d6aa2b497f3",
+            "4852c9abce9f606c",
+            "78ad43db1b4f2778",
+            "562956f701957af3"
+        ],
+        "x": 274,
+        "y": 979,
+        "w": 812,
+        "h": 182
+    },
+    {
         "id": "2e244bd7363b562a",
         "type": "junction",
         "z": "3ee8b74ef468e5c7",
@@ -54,7 +77,7 @@
         "type": "function",
         "z": "3ee8b74ef468e5c7",
         "name": "Create Final JSON Object",
-        "func": "const now = Date.now();\nconst TIMEOUT = 60 * 1000; // 1 Minute in Millisekunden\n\n// Helper-Funktion, die einen Wert nur zurückgibt, wenn er nicht veraltet ist\nfunction getValidData(key, defaultValue) {\n    const data = flow.get(`ami_${key}`);\n    // Prüfen, ob Daten UND ein Zeitstempel existieren und ob dieser innerhalb des Timeouts liegt\n    if (data && data.timestamp && (now - data.timestamp < TIMEOUT)) {\n        return data.value;\n    }\n    // Andernfalls den sicheren Standardwert zurückgeben\n    return defaultValue;\n}\n\n// Helper für Werte, die keinen Timeout benötigen\nfunction getData(key, defaultValue) {\n    const data = flow.get(`ami_${key}`);\n    return data ? data.value : defaultValue;\n}\n\n\n// --- Werte mit und ohne Timeout aus dem Kontext holen ---\nconst odometerRaw = getData(\"odometer_raw\", 0);\nconst rangeKm = getData(\"range_km\", 0);\nconst socPercent = getData(\"soc_percent\", 0);\nconst shellyPlugConnected = flow.get(\"shelly_plug_connected\") ?? false;\n\n// Diese Werte werden nach 1 Minute Inaktivität auf ihre Standardwerte zurückgesetzt\nconst vehicleStatusRaw = getValidData(\"vehicle_on\", 0); // 0 = OFF\nconst chargeTimeRaw = getValidData(\"charge_time_sec\", 65535); // 65535 = Not Charging\n\n\n// --- Kilometerstand umrechnen ---\nlet final_odometer_km = 0;\nif (odometerRaw > 0) {\n    const swapped_V = (((odometerRaw & 16711680) / 65536) | (odometerRaw & 65280)) | ((odometerRaw & 255) * 65536);\n    final_odometer_km = swapped_V / 10.0;\n}\n\n// --- Ladestatus bestimmen ---\nconst isAmiCharging = chargeTimeRaw < 65535;\n\n// --- Finales Objekt bauen ---\nconst status = {\n    odometer_km: final_odometer_km,\n    range_km: rangeKm,\n    soc_percent: socPercent,\n    vehicle_status: (vehicleStatusRaw === 1) ? \"ON\" : \"OFF\",\n    charger_connected: shellyPlugConnected,\n    is_charging: isAmiCharging,\n    remaining_charge_time_sec: isAmiCharging ? chargeTimeRaw : 0\n};\n\nmsg.payload = status;\nreturn msg;",
+        "func": "const now = Date.now();\nconst TIMEOUT = 60 * 1000; // 1 Minute in Millisekunden\n\n// Helper-Funktion, die einen Wert nur zurückgibt, wenn er nicht veraltet ist\nfunction getValidData(key, defaultValue) {\n    const data = flow.get(`ami_${key}`);\n    // Prüfen, ob Daten UND ein Zeitstempel existieren und ob dieser innerhalb des Timeouts liegt\n    if (data && data.timestamp && (now - data.timestamp < TIMEOUT)) {\n        return data.value;\n    }\n    // Andernfalls den sicheren Standardwert zurückgeben\n    return defaultValue;\n}\n\n// Helper für Werte, die keinen Timeout benötigen\nfunction getData(key, defaultValue) {\n    const data = flow.get(`ami_${key}`);\n    return data ? data.value : defaultValue;\n}\n\n\n// --- Werte mit und ohne Timeout aus dem Kontext holen ---\nconst odometerRaw = getData(\"odometer_raw\", 0);\nconst rangeKm = getData(\"range_km\", 0);\nconst socPercent = getData(\"soc_percent\", 0);\nconst shellyPlugConnected = flow.get(\"shelly_plug_connected\") ?? false;\n\n// NEU: Ladeleistung vom Shelly holen\nconst shellyPower = flow.get(\"shelly_apower\") ?? 0;\n\n// Diese Werte werden nach 1 Minute Inaktivität auf ihre Standardwerte zurückgesetzt\nconst vehicleOnRaw = getValidData(\"vehicle_on\", 0); // 0 = OFF\nconst chargeTimeRaw = getValidData(\"charge_time_sec\", 65535);\n\n\n// --- Kilometerstand umrechnen ---\nlet final_odometer_km = 0;\nif (odometerRaw > 0) {\n    const swapped_V = (((odometerRaw & 16711680) / 65536) | (odometerRaw & 65280)) | ((odometerRaw & 255) * 65536);\n    final_odometer_km = swapped_V / 10.0;\n}\n\n// --- Ladestatus bestimmen ---\n// Workaround: Da CAN-Signal 'charge_time' unzuverlässig ist (immer 65535),\n// nutzen wir die Leistungsmessung des Shelly (> 20 Watt = Lädt).\nconst isAmiCharging = shellyPower > 20;\n\n// --- Finales Objekt bauen ---\nconst status = {\n    odometer_km: final_odometer_km,\n    range_km: rangeKm,\n    soc_percent: socPercent,\n    vehicle_on: (vehicleOnRaw === 1) ? \"ON\" : \"OFF\",\n    charger_connected: shellyPlugConnected,\n    is_charging: isAmiCharging,\n    // Wir geben die rohe Zeit weiter, auch wenn sie falsch (65535) ist.\n    // Eine Berechnung aus dem SoC wäre hier evtl. eine zukünftige Option.\n    remaining_charge_time_sec: chargeTimeRaw\n};\n\nmsg.payload = status;\nreturn msg;",
         "outputs": 1,
         "timeout": "",
         "noerr": 0,
@@ -75,7 +98,7 @@
         "type": "debug",
         "z": "3ee8b74ef468e5c7",
         "name": "Final Ami Status",
-        "active": true,
+        "active": false,
         "tosidebar": true,
         "console": false,
         "tostatus": true,
@@ -83,8 +106,8 @@
         "targetType": "msg",
         "statusVal": "payload.soc_percent",
         "statusType": "msg",
-        "x": 920,
-        "y": 260,
+        "x": 960,
+        "y": 340,
         "wires": []
     },
     {
@@ -217,8 +240,8 @@
         "label": "Fahrzeugstatus",
         "format": "{{payload.vehicle_status}}",
         "layout": "row-spread",
-        "x": 370,
-        "y": 580,
+        "x": 380,
+        "y": 560,
         "wires": []
     },
     {
@@ -274,8 +297,8 @@
         "font": "",
         "fontSize": "",
         "color": "#000000",
-        "x": 420,
-        "y": 640,
+        "x": 400,
+        "y": 600,
         "wires": []
     },
     {
@@ -290,8 +313,8 @@
         "nl": false,
         "rap": false,
         "inputs": 0,
-        "x": 170,
-        "y": 180,
+        "x": 140,
+        "y": 160,
         "wires": [
             [
                 "e6f9b522a5f03c0d"
@@ -303,15 +326,19 @@
         "type": "function",
         "z": "3ee8b74ef468e5c7",
         "name": "Store Shelly Plug Status",
-        "func": "if (msg.payload && typeof msg.payload.state !== 'undefined') {\n    // Speichert den Zustand des Shelly (true/false) in einer Flow-Variable\n    flow.set(\"shelly_plug_connected\", msg.payload.state);\n}\nreturn null;",
+        "func": "if (msg.payload && typeof msg.payload.state !== 'undefined') {\n    // Speichert den Zustand des Shelly (true/false) in einer Flow-Variable\n    flow.set(\"shelly_plug_connected\", msg.payload.state);\n}\nreturn msg;",
         "outputs": 1,
+        "timeout": "",
         "noerr": 0,
         "initialize": "",
         "finalize": "",
-        "x": 400,
-        "y": 180,
+        "libs": [],
+        "x": 390,
+        "y": 160,
         "wires": [
-            []
+            [
+                "db4eb12c497e7ac4"
+            ]
         ]
     },
     {
@@ -350,8 +377,8 @@
         "font": "",
         "fontSize": "",
         "color": "#000000",
-        "x": 400,
-        "y": 700,
+        "x": 360,
+        "y": 640,
         "wires": []
     },
     {
@@ -379,7 +406,7 @@
         "type": "function",
         "z": "3ee8b74ef468e5c7",
         "name": "Store Parsed Value",
-        "func": "// Der Payload ist bereits ein JSON-Objekt, z.B. {\"soc_percent\": 95}\n\n// Den Schlüssel (z.B. \"soc_percent\") und den Wert (z.B. 95) extrahieren\nconst key = Object.keys(msg.payload)[0];\nconst value = msg.payload[key];\n\nif (key && value !== undefined) {\n    // Ein Objekt mit dem Wert und dem aktuellen Zeitstempel speichern\n    const data = {\n        value: value,\n        timestamp: Date.now()\n    };\n    \n    // Eine Flow-Variable mit dem Präfix 'ami_' und dem Schlüsselnamen setzen\n    // z.B. flow.set(\"ami_soc_percent\", {value: 95, timestamp: 167...});\n    flow.set(`ami_${key}`, data);\n}\n\nreturn null; // Diese Nachricht muss nicht weitergeleitet werden",
+        "func": "// Der Payload ist bereits ein JSON-Objekt, z.B. {\"soc_percent\": 95}\n\n// Den Schlüssel (z.B. \"soc_percent\") und den Wert (z.B. 95) extrahieren\nconst key = Object.keys(msg.payload)[0];\nconst value = msg.payload[key];\n\nif (key && value !== undefined) {\n    // Ein Objekt mit dem Wert und dem aktuellen Zeitstempel speichern\n    const data = {\n        value: value,\n        timestamp: Date.now()\n    };\n    \n    // Eine Flow-Variable mit dem Präfix 'ami_' und dem Schlüsselnamen setzen\n    // z.B. flow.set(\"ami_soc_percent\", {value: 95, timestamp: 167...});\n    flow.set(`ami_${key}`, data);\n}\n\nreturn msg;",
         "outputs": 1,
         "timeout": "",
         "noerr": 0,
@@ -389,7 +416,9 @@
         "x": 370,
         "y": 100,
         "wires": [
-            []
+            [
+                "8050e5692ba15e62"
+            ]
         ]
     },
     {
@@ -406,7 +435,7 @@
         "correl": "",
         "expiry": "",
         "broker": "59ec4f6debcd1b1e",
-        "x": 870,
+        "x": 1030,
         "y": 880,
         "wires": []
     },
@@ -426,7 +455,7 @@
         "y": 880,
         "wires": [
             [
-                "0437e8c034ea4edb"
+                "2b8b685bde0d4872"
             ]
         ]
     },
@@ -449,7 +478,7 @@
         "from": "",
         "to": "",
         "reg": false,
-        "x": 590,
+        "x": 790,
         "y": 860,
         "wires": [
             [
@@ -476,7 +505,7 @@
         "from": "",
         "to": "",
         "reg": false,
-        "x": 590,
+        "x": 790,
         "y": 900,
         "wires": [
             [
@@ -506,7 +535,7 @@
         "checkall": "true",
         "repair": false,
         "outputs": 2,
-        "x": 430,
+        "x": 650,
         "y": 880,
         "wires": [
             [
@@ -572,6 +601,285 @@
         "info": "Ein Inject-Node löst alle 5 Sekunden eine Function aus.\nDiese Function liest alle gespeicherten Flow-Variablen aus, fasst sie zu einem einzigen, sauberen JSON-Objekt zusammen und sendet es an den Ausgang.\n\nVon hier aus kannst du die Daten:\n- Im Debug-Fenster anzeigen.\n- An ein anderes MQTT-Topic senden (für EVCC).\n- Im Dashboard anzeigen.",
         "x": 110,
         "y": 840,
+        "wires": []
+    },
+    {
+        "id": "2b8b685bde0d4872",
+        "type": "function",
+        "z": "3ee8b74ef468e5c7",
+        "name": "Block EVCC if Unsafe",
+        "func": "const locked = flow.get(\"safety_lock\");\nif (locked) {\n    node.warn(\"Blockiere EVCC-Befehl wegen aktiver Wegfahrsperre!\");\n    return null;\n}\nreturn msg;",
+        "outputs": 1,
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 460,
+        "y": 880,
+        "wires": [
+            [
+                "0437e8c034ea4edb"
+            ]
+        ]
+    },
+    {
+        "id": "8c3f2288b4843fbe",
+        "type": "function",
+        "z": "3ee8b74ef468e5c7",
+        "g": "32c9c8bd14ae1369",
+        "name": "Check: Startversuch mit Kabel?",
+        "func": "// Wir suchen nur nach dem 'vehicle_on' Signal\nif (msg.payload.vehicle_on === undefined) {\n    return null;\n}\n\nconst currentStatus = msg.payload.vehicle_on;\n// Hole den vorherigen Status (um nur auf die Flanke 0->1 zu reagieren)\nconst lastStatus = context.get(\"lastVehicleOn\") || 0;\ncontext.set(\"lastVehicleOn\", currentStatus);\n\n// Hole Stecker-Status (Wahrheit vom Shelly)\nconst isPlugged = flow.get(\"shelly_plug_connected\");\n\n// Hole Shelly-Schaltzustand (Ist Strom schon an?)\n// Wenn Strom an ist, laden wir vermutlich gerade, dann ist 'vehicle_on' normal.\nconst isShellyOn = flow.get(\"shelly_switch_on\");\n\n// LOGIK: \n// Wenn Auto angeht (0->1) UND Stecker steckt UND Strom ist AUS\nif (currentStatus === 1 && lastStatus === 0 && isPlugged && !isShellyOn) {\n    node.warn(\"ALARM: Auto gestartet obwohl Kabel steckt und kein Ladestrom! Aktiviere Strom zur Erkennung.\");\n    // SETZE LOCK\n    flow.set(\"safety_lock\", true);\n    return { payload: \"on\" };\n}\n\nreturn null;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 430,
+        "y": 1060,
+        "wires": [
+            [
+                "2c60e946733b7e76",
+                "4852c9abce9f606c"
+            ]
+        ]
+    },
+    {
+        "id": "2c60e946733b7e76",
+        "type": "trigger",
+        "z": "3ee8b74ef468e5c7",
+        "g": "32c9c8bd14ae1369",
+        "name": "Force ON (1min)",
+        "op1": "on",
+        "op2": "off",
+        "op1type": "str",
+        "op2type": "str",
+        "duration": "1",
+        "extend": false,
+        "overrideDelay": false,
+        "units": "min",
+        "reset": "RESET",
+        "bytopic": "all",
+        "topic": "topic",
+        "outputs": 1,
+        "x": 730,
+        "y": 1060,
+        "wires": [
+            [
+                "562956f701957af3"
+            ]
+        ]
+    },
+    {
+        "id": "6ac61d6aa2b497f3",
+        "type": "change",
+        "z": "3ee8b74ef468e5c7",
+        "g": "32c9c8bd14ae1369",
+        "name": "Reset bei Abstecken",
+        "rules": [
+            {
+                "t": "set",
+                "p": "payload",
+                "pt": "msg",
+                "to": "RESET",
+                "tot": "str"
+            },
+            {
+                "t": "set",
+                "p": "safety_lock",
+                "pt": "flow",
+                "to": "false",
+                "tot": "bool"
+            }
+        ],
+        "action": "",
+        "property": "",
+        "from": "",
+        "to": "",
+        "reg": false,
+        "x": 740,
+        "y": 1120,
+        "wires": [
+            [
+                "2c60e946733b7e76"
+            ]
+        ]
+    },
+    {
+        "id": "4852c9abce9f606c",
+        "type": "debug",
+        "z": "3ee8b74ef468e5c7",
+        "g": "32c9c8bd14ae1369",
+        "name": "SAFETY TRIGGER",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "payload",
+        "targetType": "msg",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 730,
+        "y": 1020,
+        "wires": []
+    },
+    {
+        "id": "78ad43db1b4f2778",
+        "type": "switch",
+        "z": "3ee8b74ef468e5c7",
+        "g": "32c9c8bd14ae1369",
+        "name": "Wenn abgesteckt...",
+        "property": "payload.state",
+        "propertyType": "msg",
+        "rules": [
+            {
+                "t": "false"
+            }
+        ],
+        "checkall": "true",
+        "repair": false,
+        "outputs": 1,
+        "x": 450,
+        "y": 1120,
+        "wires": [
+            [
+                "6ac61d6aa2b497f3"
+            ]
+        ]
+    },
+    {
+        "id": "562956f701957af3",
+        "type": "function",
+        "z": "3ee8b74ef468e5c7",
+        "g": "32c9c8bd14ae1369",
+        "name": "Clear Lock on Timeout",
+        "func": "// Wenn der Timer abläuft und 'off' sendet, geben wir das Lock frei.\nif (msg.payload === \"off\") {\n    flow.set(\"safety_lock\", false);\n    node.warn(\"Sicherheits-Lock aufgehoben (Timeout).\");\n} else {\n    return msg;\n}\nreturn null;\n",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 960,
+        "y": 1060,
+        "wires": [
+            [
+                "bf91cf5aea70e67f"
+            ]
+        ]
+    },
+    {
+        "id": "8050e5692ba15e62",
+        "type": "link out",
+        "z": "3ee8b74ef468e5c7",
+        "name": "wican Parsed JSON",
+        "mode": "link",
+        "links": [
+            "ec3fee4c7abdf3d2"
+        ],
+        "x": 515,
+        "y": 100,
+        "wires": []
+    },
+    {
+        "id": "ec3fee4c7abdf3d2",
+        "type": "link in",
+        "z": "3ee8b74ef468e5c7",
+        "name": "wican Parsed JSON",
+        "links": [
+            "8050e5692ba15e62"
+        ],
+        "x": 205,
+        "y": 1060,
+        "wires": [
+            [
+                "8c3f2288b4843fbe"
+            ]
+        ]
+    },
+    {
+        "id": "db4eb12c497e7ac4",
+        "type": "link out",
+        "z": "3ee8b74ef468e5c7",
+        "name": "Shelly Charger Input",
+        "mode": "link",
+        "links": [
+            "411e008d9de2122d"
+        ],
+        "x": 555,
+        "y": 160,
+        "wires": []
+    },
+    {
+        "id": "411e008d9de2122d",
+        "type": "link in",
+        "z": "3ee8b74ef468e5c7",
+        "name": "Shelly Charger Input",
+        "links": [
+            "db4eb12c497e7ac4"
+        ],
+        "x": 205,
+        "y": 1120,
+        "wires": [
+            [
+                "78ad43db1b4f2778"
+            ]
+        ]
+    },
+    {
+        "id": "3675f10935cfabb5",
+        "type": "function",
+        "z": "3ee8b74ef468e5c7",
+        "name": "Store Shelly Switch Status",
+        "func": "if (msg.payload) {\n    // Speichert den Schaltzustand des Shelly (true/false) in einer Flow-Variable\n    if (typeof msg.payload.output !== 'undefined') {\n        flow.set(\"shelly_switch_on\", msg.payload.output);\n    }\n    // Speichert die aktuelle Leistung (Watt) in einer Flow-Variable\n    if (typeof msg.payload.apower !== 'undefined') {\n        flow.set(\"shelly_apower\", msg.payload.apower);\n    }\n}\nreturn msg;",
+        "outputs": 1,
+        "timeout": "",
+        "noerr": 0,
+        "initialize": "",
+        "finalize": "",
+        "libs": [],
+        "x": 400,
+        "y": 220,
+        "wires": [
+            [
+                "89399e21d0efd0db"
+            ]
+        ]
+    },
+    {
+        "id": "4a9ebd8ec8b75f17",
+        "type": "mqtt in",
+        "z": "3ee8b74ef468e5c7",
+        "name": "Shelly Switch Status",
+        "topic": "shellies/amicharger/status/switch:0",
+        "qos": "2",
+        "datatype": "json",
+        "broker": "59ec4f6debcd1b1e",
+        "nl": false,
+        "rap": false,
+        "inputs": 0,
+        "x": 140,
+        "y": 220,
+        "wires": [
+            [
+                "3675f10935cfabb5"
+            ]
+        ]
+    },
+    {
+        "id": "89399e21d0efd0db",
+        "type": "debug",
+        "z": "3ee8b74ef468e5c7",
+        "name": "debug 1",
+        "active": true,
+        "tosidebar": true,
+        "console": false,
+        "tostatus": false,
+        "complete": "false",
+        "statusVal": "",
+        "statusType": "auto",
+        "x": 740,
+        "y": 220,
         "wires": []
     },
     {

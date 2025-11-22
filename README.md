@@ -80,7 +80,7 @@ Die folgende Konfiguration wird in der Weboberfläche des WiCAN-Moduls unter "CA
 CAN ID (dec)|Name|PID|Index|Start Bit|Bit Length|Expression|Cycle MS
 :---|:---|:---|:---|:---|:---|:---|:--
 1811|range_km|-1|0|1|7|V|5000
-1811|vehicle_on|-1|0|21|1|V|5000
+1811|vehicle_on|-1|0|21|1|V|500
 1408|soc_percent|-1|0|40|8|V|5000
 1410|charge_time_sec|-1|0|0|16|(((V&255)*256)\|((V&65280)/256))|5000
 1409|odometer_raw|-1|0|32|24|V|5000
@@ -108,6 +108,8 @@ Der Node-RED-Flow ist das Herzstück der Logik. Er abonniert die WiCAN- und Shel
   * Stellt ein Dashboard bereit.
 
 * Sendet das finale Objekt an `smarthome/citroen_ami/status`.
+
+* Pfüt ob jemand wegfahren möchte, obwohl das Auto noch angesteckt ist (und schaltet den shelly an, damit das Auto wieder ausgeht).
 
 * Konvertiert das ON-OFF Kommando von EVCC and den Shelly 
 
